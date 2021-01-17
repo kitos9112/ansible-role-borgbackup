@@ -28,7 +28,7 @@ location:
 {% if borg_exclude_patterns != [] %}
     exclude_patterns:
 {% for dir in borg_exclude_patterns %}
-      - {{ dir }}
+        - '{{ dir }}'
 {% endfor %}
 {% endif %}
 
