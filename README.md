@@ -87,13 +87,13 @@ $ git clone https://github.com/borgbase/ansible-role-borgbackup.git roles/borgba
 ### Optional Arguments for [BorgBase.com](https://www.borgbase.com) repository auto creation
 This role can also set up a new repository on BorgBase, using the arguments below. Thanks to [Philipp Rintz](https://github.com/p-rintz) for contribution of this feature.
 
-- `create_repo`: Whether to let the role create the repository for the server. Default: False
+- `create_repo`: Whether to let the role create the repository for the server. Default: false
 - `bb_token`: Your [BorgBase.com](https://www.borgbase.com) API-Token. Should be Create Only for security reasons.
 - `bb_region`: Which region the backups should be saved in. Choice: "eu" or "us".
 - `bb_new_sshkey`: Whether to use the automatically created SSH_key. Default: True
 - `bb_sshkey`: If there is a key already available on [BorgBase.com](https://www.borgbase.com) that should be used, it can be set with this variable. The key needs to be exactly the same, including key-comment.
 - `bb_append`: Should the permission of the newly created repository be append only? Default: True
-- `bb_quota`: To use a quota for the Server. Default: False
+- `bb_quota`: To use a quota for the Server. Default: false
 - `bb_quota_size`: Will need to be set if `bb_quota` is set to True. In Gigabyte.
 - `bb_alertdays`: After how many days of no backup activity should alerts be sent out? Defaults to off. 
 - `bb_repo_name`: What name the created repository should have. Defaults to the inventory_hostname.

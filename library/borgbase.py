@@ -27,7 +27,7 @@ EXAMPLES = '''
   borgbase:
     repository_name: "{{ inventory_hostname }}"
     token: "Your Borgbase API Token"
-    new_ssh_key: False
+    new_ssh_key: false
     ssh_key: "ssh-ed25519 AAAAC3Nz......aLqRJw+dl/E+2BJ xxx@yyy"
     region: us
   delegate_to: localhost

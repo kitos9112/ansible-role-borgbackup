@@ -3,5 +3,5 @@
   yum:
     pkg: epel-release
     state: installed
-    update_cache: yes
+    update_cache: true
   when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'

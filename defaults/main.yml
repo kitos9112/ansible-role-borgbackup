@@ -1,5 +1,5 @@
 ---
-borg_encryption_passphrase: ''
+borg_encryption_passphrase: ""
 borg_exclude_patterns: []
 borgmatic_config_name: config.yaml
 borgmatic_large_repo: true
@@ -28,11 +28,11 @@ borg_retention_policy:
   keep_daily: 7
   keep_weekly: 4
   keep_monthly: 6
-create_repo: False
+create_repo: false
 ssh_key_file: .ssh/id_ed25519
 bb_new_sshkey: True
 bb_append: True
-bb_quota: False
+bb_quota: false
 bb_quota_size: 0
 bb_alertdays: 0
 bb_repo_name: "{{ inventory_hostname }}"

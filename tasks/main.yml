@@ -34,7 +34,7 @@
 - name: Ensure root has SSH key.
   user:
     name: "root"
-    generate_ssh_key: yes
+    generate_ssh_key: true
     ssh_key_file: "{{ ssh_key_file }}"
     ssh_key_type: ed25519
   register: root_user
@@ -54,20 +54,20 @@
     region: "{{ bb_region }}"
     alertdays: "{{ bb_alertdays }}"
   delegate_to: localhost
-  become: no
+  become: false
   register: repo_creation
   when: create_repo
 
 - name: Set Repository Fact
   set_fact:
     borg_repository: |-
-          {% if borg_repository is defined and borg_repository is string %}
-          {{ [borg_repository] + [ repo_creation['data']['repoPath'] ] }}
-          {% elif borg_repository is defined %}
-          {{ borg_repository + [ repo_creation['data']['repoPath'] ] }}
-          {% else %}
-          {{ repo_creation['data']['repoPath'] }}
-          {% endif %}
+      {% if borg_repository is defined and borg_repository is string %}
+      {{ [borg_repository] + [ repo_creation['data']['repoPath'] ] }}
+      {% elif borg_repository is defined %}
+      {{ borg_repository + [ repo_creation['data']['repoPath'] ] }}
+      {% else %}
+      {{ repo_creation['data']['repoPath'] }}
+      {% endif %}
   when: create_repo
 
 - name: Ensures /etc/borgmatic exists
@@ -127,5 +127,5 @@
     user: "root"
     cron_file: borgmatic
     name: PATH
-    env: yes
+    env: true
     value: /usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
