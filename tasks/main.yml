@@ -1,14 +1,15 @@
 ---
 - name: Ensure legacy hooks aren't used
-  assert:
+  ansible.builtin.assert:
     that:
       - borgmatic_failure_command is undefined
       - borgmatic_before_backup_command is undefined
       - borgmatic_after_backup_command is undefined
-    msg: Please use the new borgmatic_hooks variable instead of individual before/after/failure hooks.
+      - borgmatic_hooks.keys() | difference(['before_backup', 'after_backup', 'on_error']) | length == 0
+    fail_msg: Use supported legacy hooks or the modern borgmatic_commands variable.
 
 - name: Include OS-specific variables
-  include_vars: "{{ item }}"
+  ansible.builtin.include_vars: "{{ item }}"
   with_first_found:
     - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
     - "{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
@@ -23,71 +24,87 @@
     - "{{ ansible_os_family }}.yml"
 
 - name: Install required System Packages
-  package:
+  ansible.builtin.package:
     name: "{{ borg_packages }}"
     state: present
 
-- name: Create virtualenv for borg # noqa package-latest
-  pip:
+- name: Create the virtualenv and retain its bootstrap tooling
+  ansible.builtin.pip:
     name:
       - pip
       - setuptools
-    state: latest
+    state: present
     virtualenv: /opt/borgmatic
     virtualenv_command: "{{ python_bin }} -m venv"
 
 - name: Install dependent Python Packages
-  pip:
+  ansible.builtin.pip:
     name: "{{ borg_dependent_python_packages }}"
     virtualenv: /opt/borgmatic
   when: borg_dependent_python_packages is defined
 
 - name: Install main Python Packages
-  pip:
+  ansible.builtin.pip:
     name: "{{ borg_python_packages }}"
     virtualenv: /opt/borgmatic
   when: borg_python_packages is defined
 
 - name: Create borgmatic command in /usr/local/bin
-  copy:
+  ansible.builtin.copy:
     content: |
-      #!/bin/bash
-      . /opt/borgmatic/bin/activate
-      borgmatic "$@"
+      #!/bin/sh
+      exec /opt/borgmatic/bin/borgmatic "$@"
     dest: /usr/local/bin/borgmatic
     owner: root
     group: root
     mode: "0755"
 
 - name: Ensure root has SSH key.
-  user:
+  ansible.builtin.user:
     name: "root"
     generate_ssh_key: true
     ssh_key_file: "{{ ssh_key_file }}"
     ssh_key_type: ed25519
-  register: root_user
+  register: borgbackup_root_user
 
 - name: Print key created for root user (use for remote repo)
-  debug:
-    var: root_user['ssh_public_key']
+  ansible.builtin.debug:
+    var: borgbackup_root_user['ssh_public_key']
 
 - name: Ensure /etc/borgmatic exists
-  file:
+  ansible.builtin.file:
     path: /etc/borgmatic
     state: directory
-    mode: 0700
+    mode: "0700"
     owner: root
 
 - name: Add Borgmatic configuration
-  template:
+  ansible.builtin.template:
     src: config.yaml.j2
     dest: "/etc/borgmatic/{{ borgmatic_config_name }}"
-    mode: 0600
+    mode: "0600"
+    owner: root
+    group: root
+    validate: /opt/borgmatic/bin/borgmatic config validate --config %s
+  no_log: true
+  diff: false
+
+- name: Validate configuration before enrolling cron jobs
+  ansible.builtin.command:
+    argv:
+      - /opt/borgmatic/bin/borgmatic
+      - config
+      - validate
+      - --config
+      - "/etc/borgmatic/{{ borgmatic_config_name }}"
+  changed_when: false
+  no_log: true
 
 - name: Add cron-job for borgmatic (large repo, create and check separate)
+  when: borgmatic_large_repo
   block:
     - name: Add cron job for regular create and prune
-      cron:
+      ansible.builtin.cron:
         name: "{{ borgmatic_cron_name }}"
         hour: "{{ borgmatic_cron_hour }}"
         minute: "{{ borgmatic_cron_minute }}"
@@ -95,7 +112,7 @@
         cron_file: "{{ borgmatic_cron_name }}"
         job: "borgmatic -c /etc/borgmatic/{{ borgmatic_config_name }} create prune"
     - name: Add cron job for infrequent checks
-      cron:
+      ansible.builtin.cron:
         name: "{{ borgmatic_cron_name }}-check"
         day: "{{ borgmatic_cron_checks_day }}"
         hour: "{{ borgmatic_cron_checks_hour }}"
@@ -103,12 +120,12 @@
         user: "root"
         cron_file: "{{ borgmatic_cron_name }}"
         job: "borgmatic -c /etc/borgmatic/{{ borgmatic_config_name }} check"
-  when: borgmatic_large_repo
 
 - name: Add cron-job for borgmatic (normal-sized repo)
+  when: not borgmatic_large_repo
   block:
     - name: Add cron job for create, check and prune
-      cron:
+      ansible.builtin.cron:
         name: "{{ borgmatic_cron_name }}"
         hour: "{{ borgmatic_cron_hour }}"
         minute: "{{ borgmatic_cron_minute }}"
@@ -116,13 +133,14 @@
         cron_file: "{{ borgmatic_cron_name }}"
         job: "borgmatic -c /etc/borgmatic/{{ borgmatic_config_name }}"
     - name: Ensure separate check cron job is absent
-      cron:
+      ansible.builtin.cron:
         name: "{{ borgmatic_cron_name }}-check"
+        user: root
+        cron_file: "{{ borgmatic_cron_name }}"
         state: absent
-  when: not borgmatic_large_repo
 
 - name: Set PATH for borgmatic cron job.
-  cron:
+  ansible.builtin.cron:
     user: "root"
     cron_file: "{{ borgmatic_cron_name }}"
     name: PATH

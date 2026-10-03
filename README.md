@@ -103,3 +103,30 @@ MIT/BSD
 ## Author
 
 © 2018-2020 Manuel Riel and contributors.
+
+
+## Stable-release configuration update
+
+This fork pins BorgBackup 1.4.5 and borgmatic 2.1.9 by default, through
+`borgbackup_version` and `borgmatic_version`. It keeps the existing role input
+names while rendering the current flat borgmatic configuration. Borg 2 beta
+and repository-format migration are outside this change.
+
+The virtualenv Borg executable is selected explicitly; the wrapper uses exec
+so failures reach cron. Credential-bearing template output and diffs are
+suppressed, and configuration validation runs before cron enrollment. The
+bootstrap pip/setuptools task no longer upgrades packages on every run.
+
+Legacy `before_backup`, `after_backup` and `on_error` hooks are converted to
+modern command hooks. Other legacy names are refused; use
+`borgmatic_commands` for additional modern hooks. `borgmatic_mariadb_databases`
+accepts borgmatic's MariaDB dump definitions, including password transport and
+transaction options. Configuration validation does not prove database or
+remote repository access. Enrolling SSH keys and testing restore remain
+operator responsibilities.
+
+Tests in `tests/test_modern_config.py` use synthetic data. With prepared Python
+3.12 uv tool caches for BorgBackup 1.4.5 and borgmatic 2.1.9, set
+`BORG_ROLE_INTEGRATION=1` to additionally validate with the real borgmatic
+schema and create/check/extract an encrypted local canary archive. These
+optional tests run offline and never contact a real backup repository.

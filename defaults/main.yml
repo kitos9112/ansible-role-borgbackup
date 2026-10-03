@@ -1,4 +1,8 @@
 ---
+borgbackup_version: "1.4.5"
+borgmatic_version: "2.1.9"
+borgmatic_mariadb_databases: []
+borgmatic_commands: []
 borg_encryption_passphrase: ""
 borg_exclude_patterns: []
 borgmatic_config_name: config.yaml
